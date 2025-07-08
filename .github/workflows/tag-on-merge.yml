@@ -22,7 +22,10 @@ jobs:
 
       - name: Fetch all tags
         run: git fetch --tags --force
-
+      - name: Debug tags
+        run: |
+          git tag --sort=-creatordate
+          git show-ref --tags
       - name: Get latest tag
         id: get_latest_tag
         run: |
