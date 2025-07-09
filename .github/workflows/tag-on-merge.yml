@@ -45,23 +45,23 @@ jobs:
 
       - name: Determine bump level and bump tag version
         id: bump_version
+        env:
+          INPUT_VERSION_LEVEL: ${{ github.event.inputs.version_level }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
         run: |
-          # Get latest tag
           latest=${{ steps.get_latest_tag.outputs.latest_tag }}
           echo "Latest tag: $latest"
 
-          # Detect bump level
-          level="${{ github.event.inputs.version_level }}"
+          # Use manual input if provided
+          level="$INPUT_VERSION_LEVEL"
           
           if [ -z "$level" ]; then
             echo "Manual input not provided. Detecting from PR labels..."
+            echo "Labels: $PR_LABELS"
 
-            labels="${{ toJson(github.event.pull_request.labels) }}"
-            echo "Labels: $labels"
-
-            if echo "$labels" | grep -iq '"name":"breaking"'; then
+            if echo "$PR_LABELS" | grep -iq '"name":"breaking"'; then
               level="major"
-            elif echo "$labels" | grep -iq '"name":"feat"'; then
+            elif echo "$PR_LABELS" | grep -iq '"name":"feat"'; then
               level="minor"
             else
               level="patch"
