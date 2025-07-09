@@ -54,13 +54,6 @@ jobs:
       - name: Set SSH remote
         run: |
           git remote set-url origin git@github.com:${{ github.repository }}.git
-
-      - name: Push tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.bump_version.outputs.new_tag }}
-          git push origin ${{ steps.bump_version.outputs.new_tag }}
       - name: Write VERSION file
         run: echo "${{ steps.bump_version.outputs.new_tag }}" > VERSION
       - name: Commit and push VERSION file
@@ -70,3 +63,9 @@ jobs:
           git add VERSION
           git commit -m "chore: update VERSION to ${{ steps.bump_version.outputs.new_tag }}" || echo "No changes to commit"
           git push origin main
+      - name: Push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.bump_version.outputs.new_tag }}
+          git push origin ${{ steps.bump_version.outputs.new_tag }}
