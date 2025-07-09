@@ -6,6 +6,16 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      version_level:
+        description: "Which version level to bump?"
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
   tag:
@@ -33,16 +43,45 @@ jobs:
           echo "Latest tag: $latest_tag"
           echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Bump tag version
+      - name: Determine bump level and bump tag version
         id: bump_version
         run: |
+          # Get latest tag
           latest=${{ steps.get_latest_tag.outputs.latest_tag }}
           echo "Latest tag: $latest"
 
-          IFS='.' read -r major minor patch <<<"${latest#v}"
-          patch=$((patch + 1))
-          new_tag="v$major.$minor.$patch"
+          # Detect bump level
+          level="${{ github.event.inputs.version_level }}"
+          
+          if [ -z "$level" ]; then
+            echo "Manual input not provided. Detecting from PR labels..."
 
+            labels="${{ toJson(github.event.pull_request.labels) }}"
+            echo "Labels: $labels"
+
+            if echo "$labels" | grep -iq '"name":"breaking"'; then
+              level="major"
+            elif echo "$labels" | grep -iq '"name":"feat"'; then
+              level="minor"
+            else
+              level="patch"
+            fi
+          fi
+
+          echo "Bump level: $level"
+
+          IFS='.' read -r major minor patch <<<"${latest#v}"
+
+          case "$level" in
+            major)
+              major=$((major + 1)); minor=0; patch=0 ;;
+            minor)
+              minor=$((minor + 1)); patch=0 ;;
+            patch|*)
+              patch=$((patch + 1)) ;;
+          esac
+
+          new_tag="v$major.$minor.$patch"
           echo "New tag: $new_tag"
           echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
       - name: Setup SSH
