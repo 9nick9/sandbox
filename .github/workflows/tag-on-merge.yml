@@ -46,18 +46,20 @@ jobs:
       - name: Determine bump level and bump tag version
         id: bump_version
         env:
+          EVENT_NAME: ${{ github.event_name }}
           INPUT_VERSION_LEVEL: ${{ github.event.inputs.version_level }}
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
         run: |
           latest=${{ steps.get_latest_tag.outputs.latest_tag }}
           echo "Latest tag: $latest"
 
-          # Use manual input if provided
-          level="$INPUT_VERSION_LEVEL"
-          
-          if [ -z "$level" ]; then
-            echo "Manual input not provided. Detecting from PR labels..."
-            echo "Labels: $PR_LABELS"
+          # Default bump level
+          level=""
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            level="$INPUT_VERSION_LEVEL"
+          else
+            echo "Detecting bump level from PR labels: $PR_LABELS"
 
             if echo "$PR_LABELS" | grep -iq '"name":"breaking"'; then
               level="major"
@@ -68,7 +70,7 @@ jobs:
             fi
           fi
 
-          echo "Bump level: $level"
+          echo "Determined bump level: $level"
 
           IFS='.' read -r major minor patch <<<"${latest#v}"
 
